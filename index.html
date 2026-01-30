@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASI - Proposal Tool Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --primary: #1a2a6c; --bg: #f3f4f6; --success: #27ae60; --share: #3b82f6; --copy: #8b5cf6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .section-label { font-size: 10px; font-weight: 800; color: #777; display: block; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box;}
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+        .btn { flex: 1 1 auto; padding: 12px 15px; border: 1.5px solid var(--primary); background: #fff; cursor: pointer; font-weight: bold; border-radius: 6px; font-size: 12px; white-space: nowrap; text-align: center; }
+        .btn.active { background: var(--primary); color: #fff; }
+        .dynamic-row { background: #fafafa; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #eee; }
+        .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+        #capture-area { background: #f3f4f6; padding: 10px; border-radius: 8px; width: 100%; overflow-x: auto; }
+        #result-page { min-width: 800px; background: #fff; padding: 30px; margin: 0 auto; }
+        .info-box { border: 1px solid #000; padding: 15px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+        .info-label { font-weight: bold; color: #000; }
+        .line-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .line-table th { text-align: center; border-bottom: 2px solid #000; padding: 10px 5px; font-size: 11px; text-transform: uppercase; }
+        .line-table td { padding: 12px 5px; border-bottom: 1px solid #eee; font-size: 13px; text-align: center; }
+        .line-table th:first-child, .line-table td:first-child { text-align: left; padding-left: 5px; width: 35%; }
+        .grand-total { font-size: 28px; font-weight: 900; color: #000; margin-top: 5px; }
+        .action-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+        .action-btn { border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .bg-success { background: var(--success); }
+        .bg-share { background: var(--share); }
+        .bg-copy { background: var(--copy); }
+        .hide-in-screenshot { background: #eef2ff; border: 1px dashed #7c3aed; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2 style="margin:0; color:var(--primary);">ASI Proposal Configurator</h2>
+        
+        <div class="hide-in-screenshot">
+            <span class="section-label">1. Company Logo</span>
+            <input type="file" id="logo-upload" accept="image/*" onchange="handleLogo(this)">
+        </div>
+
+        <div class="config-grid">
+            <div>
+                <span class="section-label">2. Region</span>
+                <select id="region" onchange="applyDefaultSetup(); update();">
+                    <option value="INDIA" selected>INDIA (INR)</option>
+                    <option value="AMER">AMER (USD)</option>
+                    <option value="ROW">ROW (USD)</option>
+                </select>
+            </div>
+            <div>
+                <span class="section-label">3. Core Product Billing Cycle</span>
+                <div class="btn-group">
+                    <button class="btn active" id="c-monthly" onclick="setSub('monthly')">Monthly</button>
+                    <button class="btn" id="c-quarterly" onclick="setSub('quarterly')">Quarterly</button>
+                    <button class="btn" id="c-half-yearly" onclick="setSub('half-yearly')">Half-Yearly</button>
+                    <button class="btn" id="c-yearly" onclick="setSub('yearly')">Yearly</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+             <div><span class="section-label">4. Rooms</span><input type="number" id="rooms" value="50" oninput="update()"></div>
+             <div><span class="section-label">5. Plan Type</span>
+                <div class="btn-group">
+                    <button class="btn active" id="p-starter" onclick="setPlan('starter')">Starter</button>
+                    <button class="btn" id="p-professional" onclick="setPlan('professional')">Professional</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #fdf2f2; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid var(--primary);">
+            <div class="config-grid">
+                <div><label class="section-label">Core Discount %</label><input type="number" id="soft-disc" value="0" oninput="update()"></div>
+                <div><label class="section-label">Setup Fee (One-Time)</label><input type="number" id="setup-fee" value="5000" oninput="update()"></div>
+            </div>
+        </div>
+
+        <span class="section-label">6. Add-ons (Independent Billing)</span>
+        <div id="addon-list"></div>
+        <button onclick="addRow()" style="margin-top:10px; cursor:pointer; padding: 12px; width: 100%; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold;">+ Add New Line Item</button>
+
+        <span class="section-label">7. Client & Sales Details</span>
+        <div class="config-grid">
+            <input type="text" id="in-hotel" placeholder="Property Name" oninput="update()">
+            <input type="text" id="in-cust" placeholder="Client Name" oninput="update()">
+            <input type="text" id="in-email" placeholder="Email ID" oninput="update()">
+            <input type="text" id="in-phone" placeholder="Contact Number" oninput="update()">
+            <input type="text" id="in-sales" placeholder="Sales Person" oninput="update()">
+            <input type="text" id="in-date" placeholder="Proposal Date" oninput="update()">
+        </div>
+        <textarea id="in-terms" rows="3" oninput="update()" style="margin-top:15px;" placeholder="Custom Terms & Conditions..."></textarea>
+    </div>
+
+    <div id="capture-area">
+        <div class="card" id="result-page">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; align-items: center;">
+                <div id="logo-container">
+                    <img id="logo-preview" style="max-height: 50px; display:none;">
+                    <div id="logo-text-alt" style="font-weight:bold; font-size:20px; color:#1a2a6c;">ASI SOLUTIONS</div>
+                </div>
+                <h1 style="font-size: 22px; margin: 0; color: #000;">ASI Proposal</h1>
+            </div>
+
+            <div class="info-box">
+                <div><span class="info-label">Property:</span> <span id="out-hotel">---</span></div>
+                <div><span class="info-label">Client:</span> <span id="out-cust">---</span></div>
+                <div><span class="info-label">Email:</span> <span id="out-email">---</span></div>
+                <div><span class="info-label">Contact:</span> <span id="out-phone">---</span></div>
+                <div><span class="info-label">Date:</span> <span id="out-date">---</span></div>
+                <div><span class="info-label">Sales:</span> <span id="out-sales">---</span></div>
+            </div>
+
+            <table class="line-table">
+                <thead>
+                    <tr><th>Description</th><th>Rate</th><th>Period</th><th>Disc %</th><th>Final Price</th></tr>
+                </thead>
+                <tbody id="line-items"></tbody>
+            </table>
+
+            <div style="margin-top: 25px; text-align: right;">
+                <div style="font-size: 11px; font-weight: bold; color: #777; text-transform: uppercase;">Net Payable Amount</div>
+                <div class="grand-total" id="out-total">0.00</div>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; font-size: 11px;">
+                <strong>Terms & Inclusions:</strong>
+                <div id="out-terms" style="white-space: pre-wrap; margin-top: 5px; color: #555;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="action-btn bg-success" onclick="takeScreenshot()">Download PNG</button>
+        <button class="action-btn bg-copy" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <button class="action-btn bg-share" onclick="shareProposal()">Share</button>
+    </div>
+</div>
+
+<script>
+    const rates = {"AMER": [{min:1,max:15,starter:140,professional:185},{min:16,max:25,starter:165,professional:220},{min:26,max:35,starter:175,professional:235},{min:36,max:50,starter:185,professional:260},{min:51,max:75,starter:215,professional:295},{min:76,max:100,starter:240,professional:320},{min:101,max:125,starter:260,professional:335},{min:126,max:150,starter:280,professional:360},{min:151,max:200,starter:300,professional:380},{min:201,max:250,starter:335,professional:415},{min:251,max:300,starter:385,professional:480},{min:301,max:350,starter:435,professional:530},{min:351,max:400,starter:510,professional:605},{min:401,max:450,starter:560,professional:680},{min:451,max:9999,starter:610,professional:755}],"INDIA": [{min:1,max:15,starter:2000,professional:3500},{min:16,max:25,starter:2750,professional:4500},{min:26,max:35,starter:3500,professional:5500},{min:36,max:50,starter:4250,professional:6500},{min:51,max:75,starter:5000,professional:7500},{min:76,max:100,starter:5750,professional:8500},{min:101,max:125,starter:6750,professional:9750},{min:126,max:150,starter:7750,professional:11250},{min:151,max:200,starter:8750,professional:13750},{min:201,max:9999,starter:10000,professional:15250}],"ROW": [{min:1,max:15,starter:98,professional:130},{min:16,max:25,starter:115,professional:154},{min:26,max:35,starter:122,professional:164},{min:36,max:50,starter:130,professional:182},{min:51,max:75,starter:150,professional:206},{min:76,max:100,starter:168,professional:224},{min:101,max:125,starter:182,professional:234},{min:126,max:150,starter:196,professional:252},{min:151,max:200,starter:210,professional:266},{min:201,max:250,starter:234,professional:290},{min:251,max:300,starter:270,professional:336},{min:301,max:350,starter:304,professional:371},{min:351,max:400,starter:357,professional:423},{min:401,max:450,starter:392,professional:476},{min:451,max:9999,starter:427,professional:528}]};
+    let plan = 'starter', cycle = 'monthly';
+
+    function setPlan(p) { plan = p; document.querySelectorAll('.btn[id^="p-"]').forEach(b => b.classList.remove('active')); document.getElementById('p-'+p).classList.add('active'); update(); }
+    function setSub(s) { cycle = s; document.querySelectorAll('.btn[id^="c-"]').forEach(b => b.classList.remove('active')); document.getElementById('c-'+s).classList.add('active'); update(); }
+    const getMult = (c) => { return {monthly:1, quarterly:3, 'half-yearly':6, yearly:12}[c] || 1; };
+
+    function addRow() {
+        const div = document.createElement('div');
+        div.className = 'dynamic-row';
+        div.innerHTML = `<input type="text" placeholder="Item Name" class="row-name" oninput="update()"><div class="row-grid"><select onchange="update()" class="p-cycle"><option value="once">One-time</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="half-yearly">Half-Yearly</option><option value="yearly">Yearly</option></select><input type="number" placeholder="Base Rate" class="p-price" oninput="update()"></div><div class="row-grid"><input type="number" placeholder="Disc %" class="p-disc" value="0" oninput="update()"><button onclick="this.parentElement.parentElement.remove();update()" style="color:red;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;">Delete</button></div>`;
+        document.getElementById('addon-list').appendChild(div);
+        update();
+    }
+
+    function update() {
+        const region = document.getElementById('region').value, rooms = parseInt(document.getElementById('rooms').value) || 0;
+        const softDisc = parseFloat(document.getElementById('soft-disc').value) || 0, setup = parseFloat(document.getElementById('setup-fee').value) || 0;
+        const curr = region === 'INDIA' ? '₹' : '$';
+        
+        let baseMonthly = 0; rates[region].forEach(t => { if(rooms >= t.min && rooms <= t.max) baseMonthly = t[plan]; });
+        const coreRate = baseMonthly * getMult(cycle), coreFinal = coreRate * (1 - (softDisc / 100));
+
+        let html = `<tr><td>ASI ${plan.toUpperCase()} PMS (${rooms} Rooms)</td><td>${curr}${coreRate.toLocaleString()}</td><td>${cycle.toUpperCase()}</td><td>${softDisc}%</td><td>${curr}${Math.round(coreFinal).toLocaleString()}</td></tr>`;
+        if(setup > 0) html += `<tr><td>Deployment & Setup Fee</td><td>${curr}${setup.toLocaleString()}</td><td>ONCE</td><td>0%</td><td>${curr}${setup.toLocaleString()}</td></tr>`;
+        
+        let total = coreFinal + setup;
+        document.querySelectorAll('.dynamic-row').forEach(row => {
+            const name = row.querySelector('.row-name').value || "Add-on", itemCycle = row.querySelector('.p-cycle').value, rowMonthly = parseFloat(row.querySelector('.p-price').value) || 0, disc = parseFloat(row.querySelector('.p-disc').value) || 0;
+            const mult = (itemCycle === 'once') ? 1 : getMult(itemCycle);
+            const itemRate = rowMonthly * mult, lineFinal = itemRate * (1 - (disc / 100));
+            if(rowMonthly > 0) { total += lineFinal; html += `<tr><td>${name}</td><td>${curr}${itemRate.toLocaleString()}</td><td>${itemCycle.toUpperCase()}</td><td>${disc}%</td><td>${curr}${Math.round(lineFinal).toLocaleString()}</td></tr>`; }
+        });
+
+        document.getElementById('line-items').innerHTML = html;
+        document.getElementById('out-total').innerText = curr + Math.round(total).toLocaleString();
+        document.getElementById('out-hotel').innerText = document.getElementById('in-hotel').value || '---';
+        document.getElementById('out-cust').innerText = document.getElementById('in-cust').value || '---';
+        document.getElementById('out-email').innerText = document.getElementById('in-email').value || '---';
+        document.getElementById('out-phone').innerText = document.getElementById('in-phone').value || '---';
+        document.getElementById('out-sales').innerText = document.getElementById('in-sales').value || '---';
+        document.getElementById('out-date').innerText = document.getElementById('in-date').value || new Date().toLocaleDateString('en-GB');
+        document.getElementById('out-terms').innerText = document.getElementById('in-terms').value;
+    }
+
+    function handleLogo(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = e => { document.getElementById('logo-preview').src = e.target.result; document.getElementById('logo-preview').style.display = 'block'; document.getElementById('logo-text-alt').style.display = 'none'; }; reader.readAsDataURL(input.files[0]); } }
+    function applyDefaultSetup() { document.getElementById('setup-fee').value = document.getElementById('region').value === 'INDIA' ? 5000 : 195; }
+    function takeScreenshot() { html2canvas(document.getElementById('capture-area'), { scale: 3 }).then(canvas => { const link = document.createElement('a'); link.download = `ASI_Proposal.png`; link.href = canvas.toDataURL("image/png"); link.click(); }); }
+    async function copyToClipboard() { try { const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 2 }); canvas.toBlob(async (blob) => { const item = new ClipboardItem({ "image/png": blob }); await navigator.clipboard.write([item]); alert("Copied!"); }); } catch (err) { alert("Failed to copy."); } }
+    async function shareProposal() { const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 2 }); canvas.toBlob(async (blob) => { const file = new File([blob], "ASI_Proposal.png", { type: "image/png" }); if (navigator.share) { await navigator.share({ title: 'ASI Proposal', files: [file] }); } else { alert("Not supported."); } }); }
+    update();
+</script>
+</body>
+</html>
